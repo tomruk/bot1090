@@ -94,7 +94,7 @@
 #define MODES_CLIENT_BUF_SIZE 1024
 #define MODES_NET_SNDBUF_SIZE (1024*64)
 
-#define MODES_NOTUSED(V) ((void) V)
+#define MODES_NOTUSED(V) (() V)
 
 /* Structure used to describe a networking client. */
 struct client {
@@ -234,7 +234,7 @@ struct modesMessage {
     int altitude, unit;
 };
 
-void interactiveShowData(void);
+void interactiveShowData();
 struct aircraft* interactiveReceiveData(struct modesMessage *mm);
 void modesSendRawOutput(struct modesMessage *mm);
 void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a);
@@ -254,7 +254,8 @@ bool isBotThreadActive = false, isBotRunning = false;
 
 /* ============================= Utility functions ========================== */
 
-static long long mstime(void) {
+static long long mstime()
+{
     struct timeval tv;
     long long mst;
 
@@ -266,7 +267,8 @@ static long long mstime(void) {
 
 /* =============================== Initialization =========================== */
 
-void modesInitConfig(void) {
+void modesInitConfig()
+{
     Modes.gain = MODES_MAX_GAIN;
     Modes.dev_index = 0;
     Modes.enable_agc = 0;
@@ -286,8 +288,7 @@ void modesInitConfig(void) {
     Modes.interactive_rows = getTermRows();
 }
 
-char *replaceString(const char *s, const char *oldW, 
-                                 const char *newW) 
+char *replaceString(const char *s, const char *oldW, const char *newW) 
 { 
     char *result; 
     int i, cnt = 0; 
@@ -296,16 +297,14 @@ char *replaceString(const char *s, const char *oldW,
   
     // Counting the number of times old word 
     // occur in the string 
-    for (i = 0; s[i] != '\0'; i++) 
-    { 
-        if (strstr(&s[i], oldW) == &s[i]) 
-        { 
+    for (i = 0; s[i] != '\0'; i++) {
+        if (strstr(&s[i], oldW) == &s[i]) {
             cnt++; 
-  
+
             // Jumping to index after the old word. 
             i += oldWlen - 1; 
-        } 
-    } 
+        }
+    }
   
     // Making new string of enough length 
     result = (char *)malloc(i + cnt * (newWlen - oldWlen) + 1); 
@@ -361,17 +360,20 @@ std::string* splitString(std::string input, char *c_delimiter)
     return output;
 }
 
-void *modesInitBot(void*) {
+void *initBot(void*)
+{
     isBotThreadActive = true;
     printf("Starting the bot with the token: %s\n", botToken);
     bot = new TgBot::Bot(botToken);
 
-    bot->getEvents().onCommand("start", [&](TgBot::Message::Ptr message) {
+    bot->getEvents().onCommand("start", [&](TgBot::Message::Ptr message)
+    {
         bot->getApi().sendMessage(message->chat->id, "This is bot1090, how can i help you?");
     });
 
     // Show the airplanes around
-    bot->getEvents().onCommand("show", [&](TgBot::Message::Ptr message) {
+    bot->getEvents().onCommand("show", [&](TgBot::Message::Ptr message)
+    {
         std::string resp = "";
         aircraft *a = Modes.aircrafts;
         time_t now = time(NULL);
@@ -386,7 +388,7 @@ void *modesInitBot(void*) {
                 speed *= 1.852;
             }
 
-            char buf[500];
+            char buf[1000];
             sprintf(buf, "Plane #%d\n"
             "- Hex %-6s \n"
             "- Flight %-8s\n"
@@ -403,16 +405,15 @@ void *modesInitBot(void*) {
 
             resp += buf;
 
-            //
             a = a->next;
             count++;
         }
         
-        if (count == 0) {
+        if (count == 0)
             bot->getApi().sendMessage(message->chat->id, "No planes around");
-        } else {
+        else
             bot->getApi().sendMessage(message->chat->id, resp);
-        }
+
     });
 
     try {
@@ -427,7 +428,8 @@ void *modesInitBot(void*) {
     }
 }
 
-void modesInit(void) {
+void modesInit()
+{
     int i, q;
 
     pthread_mutex_init(&Modes.data_mutex,NULL);
@@ -483,7 +485,8 @@ void modesInit(void) {
 
 /* =============================== RTLSDR handling ========================== */
 
-void modesInitRTLSDR(void) {
+void modesInitRTLSDR()
+{
     int j;
     int device_count;
     int ppm_error = 0;
@@ -543,7 +546,8 @@ void modesInitRTLSDR(void) {
  * The reading thread calls the RTLSDR API to read data asynchronously, and
  * uses a callback to populate the data buffer.
  * A Mutex is used to avoid races with the decoding thread. */
-void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
+void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx)
+{
     MODES_NOTUSED(ctx);
 
     pthread_mutex_lock(&Modes.data_mutex);
@@ -561,7 +565,8 @@ void rtlsdrCallback(unsigned char *buf, uint32_t len, void *ctx) {
 
 /* This is used when --ifile is specified in order to read data from file
  * instead of using an RTLSDR device. */
-void readDataFromFile(void) {
+void readDataFromFile()
+{
     pthread_mutex_lock(&Modes.data_mutex);
     while(1) {
         ssize_t nread, toread;
@@ -607,7 +612,8 @@ void readDataFromFile(void) {
 
 /* We read data using a thread, so the main thread only handles decoding
  * without caring about data acquisition. */
-void *readerThreadEntryPoint(void *arg) {
+void *readerThreadEntryPoint(void *arg)
+{
     MODES_NOTUSED(arg);
 
     if (Modes.filename == NULL) {
@@ -634,7 +640,8 @@ void *readerThreadEntryPoint(void *arg) {
  * "-" is 2
  * "." is 1
  */
-void dumpMagnitudeBar(int index, int magnitude) {
+void dumpMagnitudeBar(int index, int magnitude)
+{
     char *set = " .-o";
     char buf[256];
     int div = magnitude / 256 / 4;
@@ -659,7 +666,8 @@ void dumpMagnitudeBar(int index, int magnitude) {
  * If possible a few samples before the start of the messsage are included
  * for context. */
 
-void dumpMagnitudeVector(uint16_t *m, uint32_t offset) {
+void dumpMagnitudeVector(uint16_t *m, uint32_t offset)
+{
     uint32_t padding = 5; /* Show a few samples before the actual start. */
     uint32_t start = (offset < padding) ? 0 : offset-padding;
     uint32_t end = offset + (MODES_PREAMBLE_US*2)+(MODES_SHORT_MSG_BITS*2) - 1;
@@ -672,8 +680,7 @@ void dumpMagnitudeVector(uint16_t *m, uint32_t offset) {
 
 /* Produce a raw representation of the message as a Javascript file
  * loadable by debug.html. */
-void dumpRawMessageJS(char *descr, unsigned char *msg,
-                      uint16_t *m, uint32_t offset, int fixable)
+void dumpRawMessageJS(char *descr, unsigned char *msg, uint16_t *m, uint32_t offset, int fixable)
 {
     int padding = 5; /* Show a few samples before the actual start. */
     int start = offset - padding;
@@ -717,8 +724,7 @@ void dumpRawMessageJS(char *descr, unsigned char *msg,
  * display packets in a graphical format if the Javascript output was
  * enabled.
  */
-void dumpRawMessage(char *descr, unsigned char *msg,
-                    uint16_t *m, uint32_t offset)
+void dumpRawMessage(char *descr, unsigned char *msg, uint16_t *m, uint32_t offset)
 {
     int j;
     int msgtype = msg[0]>>3;
@@ -784,7 +790,8 @@ uint32_t modes_checksum_table[112] = {
 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000
 };
 
-uint32_t modesChecksum(unsigned char *msg, int bits) {
+uint32_t modesChecksum(unsigned char *msg, int bits)
+{
     uint32_t crc = 0;
     int offset = (bits == 112) ? 0 : (112-56);
     int j;
@@ -803,7 +810,8 @@ uint32_t modesChecksum(unsigned char *msg, int bits) {
 
 /* Given the Downlink Format (DF) of the message, return the message length
  * in bits. */
-int modesMessageLenByType(int type) {
+int modesMessageLenByType(int type)
+{
     if (type == 16 || type == 17 ||
         type == 19 || type == 20 ||
         type == 21)
@@ -815,7 +823,8 @@ int modesMessageLenByType(int type) {
 /* Try to fix single bit errors using the checksum. On success modifies
  * the original buffer with the fixed version, and returns the position
  * of the error bit. Otherwise if fixing failed -1 is returned. */
-int fixSingleBitErrors(unsigned char *msg, int bits) {
+int fixSingleBitErrors(unsigned char *msg, int bits)
+{
     int j;
     unsigned char aux[MODES_LONG_MSG_BITS/8];
 
@@ -846,7 +855,8 @@ int fixSingleBitErrors(unsigned char *msg, int bits) {
 /* Similar to fixSingleBitErrors() but try every possible two bit combination.
  * This is very slow and should be tried only against DF17 messages that
  * don't pass the checksum, and only in Aggressive Mode. */
-int fixTwoBitsErrors(unsigned char *msg, int bits) {
+int fixTwoBitsErrors(unsigned char *msg, int bits)
+{
     int j, i;
     unsigned char aux[MODES_LONG_MSG_BITS/8];
 
@@ -887,7 +897,8 @@ int fixTwoBitsErrors(unsigned char *msg, int bits) {
 
 /* Hash the ICAO address to index our cache of MODES_ICAO_CACHE_LEN
  * elements, that is assumed to be a power of two. */
-uint32_t ICAOCacheHashAddress(uint32_t a) {
+uint32_t ICAOCacheHashAddress(uint32_t a)
+{
     /* The following three rounds wil make sure that every bit affects
      * every output bit with ~ 50% of probability. */
     a = ((a >> 16) ^ a) * 0x45d9f3b;
@@ -899,7 +910,8 @@ uint32_t ICAOCacheHashAddress(uint32_t a) {
 /* Add the specified entry to the cache of recently seen ICAO addresses.
  * Note that we also add a timestamp so that we can make sure that the
  * entry is only valid for MODES_ICAO_CACHE_TTL seconds. */
-void addRecentlySeenICAOAddr(uint32_t addr) {
+void addRecentlySeenICAOAddr(uint32_t addr)
+{
     uint32_t h = ICAOCacheHashAddress(addr);
     Modes.icao_cache[h*2] = addr;
     Modes.icao_cache[h*2+1] = (uint32_t) time(NULL);
@@ -908,7 +920,8 @@ void addRecentlySeenICAOAddr(uint32_t addr) {
 /* Returns 1 if the specified ICAO address was seen in a DF format with
  * proper checksum (not xored with address) no more than * MODES_ICAO_CACHE_TTL
  * seconds ago. Otherwise returns 0. */
-int ICAOAddressWasRecentlySeen(uint32_t addr) {
+int ICAOAddressWasRecentlySeen(uint32_t addr)
+{
     uint32_t h = ICAOCacheHashAddress(addr);
     uint32_t a = Modes.icao_cache[h*2];
     uint32_t t = Modes.icao_cache[h*2+1];
@@ -931,7 +944,8 @@ int ICAOAddressWasRecentlySeen(uint32_t addr) {
  *
  * If the function successfully recovers a message with a correct checksum
  * it returns 1. Otherwise 0 is returned. */
-int bruteForceAP(unsigned char *msg, struct modesMessage *mm) {
+int bruteForceAP(unsigned char *msg, struct modesMessage *mm)
+{
     unsigned char aux[MODES_LONG_MSG_BYTES];
     int msgtype = mm->msgtype;
     int msgbits = mm->msgbits;
@@ -976,7 +990,8 @@ int bruteForceAP(unsigned char *msg, struct modesMessage *mm) {
 /* Decode the 13 bit AC altitude field (in DF 20 and others).
  * Returns the altitude, and set 'unit' to either MODES_UNIT_METERS
  * or MDOES_UNIT_FEETS. */
-int decodeAC13Field(unsigned char *msg, int *unit) {
+int decodeAC13Field(unsigned char *msg, int *unit)
+{
     int m_bit = msg[3] & (1<<6);
     int q_bit = msg[3] & (1<<4);
 
@@ -1004,7 +1019,8 @@ int decodeAC13Field(unsigned char *msg, int *unit) {
 
 /* Decode the 12 bit AC altitude field (in DF 17 and others).
  * Returns the altitude or 0 if it can't be decoded. */
-int decodeAC12Field(unsigned char *msg, int *unit) {
+int decodeAC12Field(unsigned char *msg, int *unit)
+{
     int q_bit = msg[5] & 1;
 
     if (q_bit) {
@@ -1045,10 +1061,10 @@ char *fs_str[8] = {
 };
 
 /* ME message type to description table. */
-char *me_str[] = {
-};
+char *me_str[] = {};
 
-char *getMEDescription(int metype, int mesub) {
+char *getMEDescription(int metype, int mesub)
+{
     char *mename = "Unknown";
 
     if (metype >= 1 && metype <= 4)
@@ -1079,7 +1095,8 @@ char *getMEDescription(int metype, int mesub) {
 /* Decode a raw Mode S message demodulated as a stream of bytes by
  * detectModeS(), and split it into fields populating a modesMessage
  * structure. */
-void decodeModesMessage(struct modesMessage *mm, unsigned char *msg) {
+void decodeModesMessage(struct modesMessage *mm, unsigned char *msg)
+{
     uint32_t crc2;   /* Computed CRC, used to verify the message CRC. */
     char *ais_charset = "?ABCDEFGHIJKLMNOPQRSTUVWXYZ????? ???????????????0123456789??????";
 
@@ -1264,7 +1281,8 @@ void decodeModesMessage(struct modesMessage *mm, unsigned char *msg) {
 
 /* This function gets a decoded Mode S Message and prints it on the screen
  * in a human readable format. */
-void displayModesMessage(struct modesMessage *mm) {
+void displayModesMessage(struct modesMessage *mm)
+{
     int j;
 
     /* Handle only addresses mode first. */
@@ -1379,7 +1397,8 @@ void displayModesMessage(struct modesMessage *mm) {
 
 /* Turn I/Q samples pointed by Modes.data into the magnitude vector
  * pointed by Modes.magnitude. */
-void computeMagnitudeVector(void) {
+void computeMagnitudeVector()
+{
     uint16_t *m = Modes.magnitude;
     unsigned char *p = Modes.data;
     uint32_t j;
@@ -1402,7 +1421,8 @@ void computeMagnitudeVector(void) {
  *
  * Note: this function will access m[-1], so the caller should make sure to
  * call it only if we are not at the start of the current buffer. */
-int detectOutOfPhase(uint16_t *m) {
+int detectOutOfPhase(uint16_t *m)
+{
     if (m[3] > m[2]/3) return 1;
     if (m[10] > m[9]/3) return 1;
     if (m[6] > m[7]/3) return -1;
@@ -1438,7 +1458,8 @@ int detectOutOfPhase(uint16_t *m) {
  * it will be more likely to detect a one because of the transformation.
  * In this way similar levels will be interpreted more likely in the
  * correct way. */
-void applyPhaseCorrection(uint16_t *m) {
+void applyPhaseCorrection(uint16_t *m)
+{
     int j;
 
     m += 16; /* Skip preamble. */
@@ -1456,7 +1477,8 @@ void applyPhaseCorrection(uint16_t *m) {
 /* Detect a Mode S messages inside the magnitude buffer pointed by 'm' and of
  * size 'mlen' bytes. Every detected Mode S message is convert it into a
  * stream of bits and passed to the function to display it. */
-void detectModeS(uint16_t *m, uint32_t mlen) {
+void detectModeS(uint16_t *m, uint32_t mlen)
+{
     unsigned char bits[MODES_LONG_MSG_BITS];
     unsigned char msg[MODES_LONG_MSG_BITS/2];
     uint16_t aux[MODES_LONG_MSG_BITS*2];
@@ -1631,7 +1653,9 @@ good_preamble:
 
             /* Update statistics. */
             if (mm.crcok || use_correction) {
-                if (errors == 0) Modes.stat_demodulated++;
+                if (errors == 0)
+                    Modes.stat_demodulated++;
+                    
                 if (mm.errorbit == -1) {
                     if (mm.crcok)
                         Modes.stat_goodcrc++;
@@ -1694,7 +1718,8 @@ good_preamble:
  *
  * Basically this function passes a raw message to the upper layers for
  * further processing and visualization. */
-void useModesMessage(struct modesMessage *mm) {
+void useModesMessage(struct modesMessage *mm)
+{
     if (!Modes.stats && (Modes.check_crc == 0 || mm->crcok)) {
         /* Track aircrafts in interactive mode or if the HTTP
          * interface is enabled. */
@@ -1718,7 +1743,8 @@ void useModesMessage(struct modesMessage *mm) {
 
 /* Return a new aircraft structure for the interactive mode linked list
  * of aircrafts. */
-struct aircraft *interactiveCreateAircraft(uint32_t addr) {
+struct aircraft *interactiveCreateAircraft(uint32_t addr)
+{
     struct aircraft *a = (aircraft*) malloc(sizeof(*a));
 
     a->addr = addr;
@@ -1743,7 +1769,8 @@ struct aircraft *interactiveCreateAircraft(uint32_t addr) {
 
 /* Return the aircraft with the specified address, or NULL if no aircraft
  * exists with this address. */
-struct aircraft *interactiveFindAircraft(uint32_t addr) {
+struct aircraft *interactiveFindAircraft(uint32_t addr)
+{
     struct aircraft *a = Modes.aircrafts;
 
     while(a) {
@@ -1754,14 +1781,16 @@ struct aircraft *interactiveFindAircraft(uint32_t addr) {
 }
 
 /* Always positive MOD operation, used for CPR decoding. */
-int cprModFunction(int a, int b) {
+int cprModFunction(int a, int b)
+{
     int res = a % b;
     if (res < 0) res += b;
     return res;
 }
 
 /* The NL function uses the precomputed table from 1090-WP-9-14 */
-int cprNLFunction(double lat) {
+int cprNLFunction(double lat)
+{
     if (lat < 0) lat = -lat; /* Table is simmetric about the equator. */
     if (lat < 10.47047130) return 59;
     if (lat < 14.82817437) return 58;
@@ -1824,13 +1853,15 @@ int cprNLFunction(double lat) {
     else return 1;
 }
 
-int cprNFunction(double lat, int isodd) {
+int cprNFunction(double lat, int isodd)
+{
     int nl = cprNLFunction(lat) - isodd;
     if (nl < 1) nl = 1;
     return nl;
 }
 
-double cprDlonFunction(double lat, int isodd) {
+double cprDlonFunction(double lat, int isodd)
+{
     return 360.0 / cprNFunction(lat, isodd);
 }
 
@@ -1844,7 +1875,8 @@ double cprDlonFunction(double lat, int isodd) {
  *    simplicity. This may provide a position that is less fresh of a few
  *    seconds.
  */
-void decodeCPR(struct aircraft *a) {
+void decodeCPR(struct aircraft *a)
+{
     const double AirDlat0 = 360.0 / 60;
     const double AirDlat1 = 360.0 / 59;
     double lat0 = a->even_cprlat;
@@ -1883,7 +1915,8 @@ void decodeCPR(struct aircraft *a) {
 }
 
 /* Receive new messages and populate the interactive mode with more info. */
-struct aircraft *interactiveReceiveData(struct modesMessage *mm) {
+struct aircraft *interactiveReceiveData(struct modesMessage *mm)
+{
     uint32_t addr;
     struct aircraft *a, *aux;
 
@@ -1950,7 +1983,8 @@ struct aircraft *interactiveReceiveData(struct modesMessage *mm) {
 }
 
 /* Show the currently captured interactive data on screen. */
-void interactiveShowData(void) {
+void interactiveShowData()
+{
     struct aircraft *a = Modes.aircrafts;
     time_t now = time(NULL);
     char progress[4];
@@ -1986,7 +2020,8 @@ void interactiveShowData(void) {
 
 /* When in interactive mode If we don't receive new nessages within
  * MODES_INTERACTIVE_TTL seconds we remove the aircraft from the list. */
-void interactiveRemoveStaleAircrafts(void) {
+void interactiveRemoveStaleAircrafts()
+{
     struct aircraft *a = Modes.aircrafts;
     struct aircraft *prev = NULL;
     time_t now = time(NULL);
@@ -2013,7 +2048,8 @@ void interactiveRemoveStaleAircrafts(void) {
 
 /* Get raw IQ samples and filter everything is < than the specified level
  * for more than 256 samples in order to reduce example file size. */
-void snipMode(int level) {
+void snipMode(int level)
+{
     int i, q;
     long long c = 0;
 
@@ -2058,7 +2094,8 @@ struct {
 };
 
 /* Networking "stack" initialization. */
-void modesInitNet(void) {
+void modesInitNet()
+{
     int j;
 
     memset(Modes.clients,0,sizeof(Modes.clients));
@@ -2084,7 +2121,8 @@ void modesInitNet(void) {
 /* This function gets called from time to time when the decoding thread is
  * awakened by new data arriving. This usually happens a few times every
  * second. */
-void modesAcceptClients(void) {
+void modesAcceptClients()
+{
     int fd, port;
     unsigned int j;
     struct client *c;
@@ -2124,7 +2162,8 @@ void modesAcceptClients(void) {
 }
 
 /* On error free the client, collect the structure, adjust maxfd if needed. */
-void modesFreeClient(int fd) {
+void modesFreeClient(int fd)
+{
     close(fd);
     free(Modes.clients[fd]);
     Modes.clients[fd] = NULL;
@@ -2149,7 +2188,8 @@ void modesFreeClient(int fd) {
 }
 
 /* Send the specified message to all clients listening for a given service. */
-void modesSendAllClients(int service, void *msg, int len) {
+void modesSendAllClients(int service, void *msg, int len)
+{
     int j;
     struct client *c;
 
@@ -2165,7 +2205,8 @@ void modesSendAllClients(int service, void *msg, int len) {
 }
 
 /* Write raw output to TCP clients. */
-void modesSendRawOutput(struct modesMessage *mm) {
+void modesSendRawOutput(struct modesMessage *mm)
+{
     char msg[128], *p = msg;
     int j;
 
@@ -2181,7 +2222,8 @@ void modesSendRawOutput(struct modesMessage *mm) {
 
 
 /* Write SBS output to TCP clients. */
-void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a) {
+void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a)
+{
     char msg[256], *p = msg;
     int emergency = 0, ground = 0, alert = 0, spi = 0;
 
@@ -2236,7 +2278,8 @@ void modesSendSBSOutput(struct modesMessage *mm, struct aircraft *a) {
 
 /* Turn an hex digit into its 4 bit decimal value.
  * Returns -1 if the digit is not in the 0-F range. */
-int hexDigitVal(int c) {
+int hexDigitVal(int c)
+{
     c = tolower(c);
     if (c >= '0' && c <= '9') return c-'0';
     else if (c >= 'a' && c <= 'f') return c-'a'+10;
@@ -2256,7 +2299,8 @@ int hexDigitVal(int c) {
  * The function always returns 0 (success) to the caller as there is
  * no case where we want broken messages here to close the client
  * connection. */
-int decodeHexMessage(struct client *c) {
+int decodeHexMessage(struct client *c)
+{
     char *hex = c->buf;
     int l = strlen(hex), j;
     unsigned char msg[MODES_LONG_MSG_BYTES];
@@ -2289,7 +2333,8 @@ int decodeHexMessage(struct client *c) {
 }
 
 /* Return a description of planes in json. */
-char *aircraftsToJson(int *len) {
+char *aircraftsToJson(int *len)
+{
     struct aircraft *a = Modes.aircrafts;
     int buflen = 1024; /* The initial buffer is incremented as needed. */
     char *buf = (char*) malloc(buflen), *p = buf;
@@ -2346,7 +2391,8 @@ char *aircraftsToJson(int *len) {
  *
  * Returns 1 on error to signal the caller the client connection should
  * be closed. */
-int handleHTTPRequest(struct client *c) {
+int handleHTTPRequest(struct client *c)
+{
     char hdr[512];
     int clen, hdrlen;
     int httpver, keepalive;
@@ -2389,14 +2435,10 @@ int handleHTTPRequest(struct client *c) {
         struct stat sbuf;
         int fd = -1;
 
-        if (stat("gmap.html",&sbuf) != -1 &&
-            (fd = open("gmap.html",O_RDONLY)) != -1)
-        {
+        if (stat("gmap.html",&sbuf) != -1 && (fd = open("gmap.html",O_RDONLY)) != -1) {
             content = (char*) malloc(sbuf.st_size);
-            if (read(fd,content,sbuf.st_size) == -1) {
-                snprintf(content,sbuf.st_size,"Error reading from file: %s",
-                    strerror(errno));
-            }
+            if (read(fd,content,sbuf.st_size) == -1)
+                snprintf(content,sbuf.st_size,"Error reading from file: %s", strerror(errno));
             clen = sbuf.st_size;
         } else {
             char buf[128];
@@ -2429,12 +2471,11 @@ int handleHTTPRequest(struct client *c) {
         printf("HTTP Reply header:\n%s", hdr);
 
     /* Send header and content. */
-    if (write(c->fd, hdr, hdrlen) != hdrlen ||
-        write(c->fd, content, clen) != clen)
-    {
+    if (write(c->fd, hdr, hdrlen) != hdrlen || write(c->fd, content, clen) != clen) {
         free(content);
         return 1;
     }
+
     free(content);
     Modes.stat_http_requests++;
     return !keepalive;
@@ -2452,8 +2493,7 @@ int handleHTTPRequest(struct client *c) {
  * The handelr returns 0 on success, or 1 to signal this function we
  * should close the connection with the client in case of non-recoverable
  * errors. */
-void modesReadFromClient(struct client *c, char *sep,
-                         int(*handler)(struct client *))
+void modesReadFromClient(struct client *c, char *sep, int(*handler)(struct client *))
 {
     while(1) {
         int left = MODES_CLIENT_BUF_SIZE - c->buflen;
@@ -2510,7 +2550,8 @@ void modesReadFromClient(struct client *c, char *sep,
 
 /* Read data from clients. This function actually delegates a lower-level
  * function that depends on the kind of service (raw, http, ...). */
-void modesReadFromClients(void) {
+void modesReadFromClients()
+{
     int j;
     struct client *c;
 
@@ -2530,7 +2571,8 @@ void modesReadFromClients(void) {
  * function here returns as long as there is a single client ready, or
  * when the specified timeout in milliesconds elapsed, without specifying to
  * the caller what client requires to be served. */
-void modesWaitReadableClients(int timeout_ms) {
+void modesWaitReadableClients(int timeout_ms)
+{
     struct timeval tv;
     fd_set fds;
     int j, maxfd = Modes.maxfd;
@@ -2559,7 +2601,8 @@ void modesWaitReadableClients(int timeout_ms) {
 /* ============================ Terminal handling  ========================== */
 
 /* Handle resizing terminal. */
-void sigWinchCallback() {
+void sigWinchCallback()
+{
     signal(SIGWINCH, SIG_IGN);
     Modes.interactive_rows = getTermRows();
     interactiveShowData();
@@ -2567,7 +2610,8 @@ void sigWinchCallback() {
 }
 
 /* Get the number of rows after the terminal changes size. */
-int getTermRows() {
+int getTermRows()
+{
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     return w.ws_row;
@@ -2575,7 +2619,8 @@ int getTermRows() {
 
 /* ================================ Main ==================================== */
 
-void showHelp(void) {
+void showHelp()
+{
     printf(
 "--device-index <index>   Select RTL device (default: 0).\n"
 "--gain <db>              Set gain (default: max gain. Use -100 for auto-gain).\n"
@@ -2615,7 +2660,8 @@ void showHelp(void) {
 /* This function is called a few times every second by main in order to
  * perform tasks we need to do continuously, like accepting new clients
  * from the net, refreshing the screen in interactive mode, and so forth. */
-void backgroundTasks(void) {
+void backgroundTasks()
+{
     if (Modes.net) {
         modesAcceptClients();
         modesReadFromClients();
@@ -2623,17 +2669,15 @@ void backgroundTasks(void) {
     }
 
     /* Refresh screen when in interactive mode. */
-    if (Modes.interactive &&
-        (mstime() - Modes.interactive_last_update) >
-        MODES_INTERACTIVE_REFRESH_TIME)
-    {
+    if (Modes.interactive && (mstime() - Modes.interactive_last_update) > MODES_INTERACTIVE_REFRESH_TIME) {
         interactiveRemoveStaleAircrafts();
         interactiveShowData();
         Modes.interactive_last_update = mstime();
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     int j;
     botToken = "";
 
@@ -2745,10 +2789,8 @@ int main(int argc, char **argv) {
     }
 
 
-    if (Modes.net)
-    {
-        if (maps_api_key != "")
-        {
+    if (Modes.net) {
+        if (maps_api_key != "") {
             modesInitNet();
         } else {
             printf("Cannot initialize the web server, you should specify a Google Maps API key with --maps-api-key\n");
@@ -2757,7 +2799,7 @@ int main(int argc, char **argv) {
     }
 
     if ((const char*) botToken != "")
-        pthread_create(&botThread, NULL, modesInitBot, NULL);
+        pthread_create(&botThread, NULL, initBot, NULL);
 
     /* If the user specifies --net-only, just run in order to serve network
      * clients without reading data from the RTL device. */
@@ -2812,5 +2854,3 @@ int main(int argc, char **argv) {
     rtlsdr_close(Modes.dev);
     return 0;
 }
-
-
