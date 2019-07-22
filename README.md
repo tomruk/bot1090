@@ -1,7 +1,15 @@
 Bot1090 README
 ===
 
-Bot 1090 is a fork of the project named [Dump1090](https://github.com/antirez/dump1090) which is a Mode S decoder specifically designed for RTLSDR devices.
+**DEPRECATED**
+
+## Why this project is DEPRECATED?
+
+I made this project because i love to work with Telegram bots. But sending the ADS-B messages via Telegram seems unnecessary.
+
+## What is this?
+
+Bot1090 is a fork of the project named [Dump1090](https://github.com/antirez/dump1090) which is a Mode-S decoder specifically designed for RTL-SDR devices.
 By building Bot1090, my intention was to develop a software which is capable of sending the captured data via Telegram so i started writing a Telegram bot for Dump1090 and then i created the Bot1090 project.
 
 Many thanks to [antirez](https://github.com/antirez) for such a nice project like this
